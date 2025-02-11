@@ -2,7 +2,7 @@ const container = document.querySelector(".container");
 const screen= document.createElement("div");
 screen.classList.add("screen");
 screen.style.cssText="background-color: white; border: 3px solid black; padding: 20px; border-radius: 4px; margin: 30px; height: 110px; margin-bottom: 3px; display: flex; justify-content: flex-end; align-items: flex-end; font-size: 25px;";
-let obj={data: 0, ascii: "789/456x123-.0=+"};
+let obj={data: 0, ascii: "789/456x123-.0=+", operator: false, operand: ''};
 screen.textContent=obj.data;
 container.appendChild(screen);
 const gridContainer=document.createElement("div");
@@ -33,40 +33,45 @@ for (let i=0; i<16; i++){
     gridContainer.appendChild(grid);
 }
 const griddy = document.querySelectorAll(".grid");
-griddy.forEach((gri)=>{
-    gri.addEventListener("click", (e) =>{
+griddy.forEach((gri) => {
+    gri.addEventListener("click", (e) => {
         let x = e.target.textContent;
-        if (x === "=") {
-            obj.data = evaluateExpression(obj.data);
-        } else {
+        if ('0123456789'.includes(x)) {
             obj.data = obj.data === "0" || obj.data === "Error" ? x : obj.data + x;
+        } else if ('+-x/'.includes(x)) {
+            if (!obj.operator) { // Prevent multiple operators in a row
+                obj.operator = true;
+                obj.data += x;
+                obj.operand = x;
+            }
+        } else if (x === "=") {
+            obj.data = evaluateExpression(obj.data).toString();
+            obj.operator = false;
+            obj.operand = '';
         }
 
-        screen.textContent = obj.data; // Update the display
+        screen.textContent = obj.data; // Update display
     });
 });
 function evaluateExpression(expression) {
-    const operators = {
-        "+": (a, b) => a + b,
-        "-": (a, b) => a - b,
-        "x": (a, b) => a * b, // Using 'x' instead of '*' for UI
-        "/": (a, b) => (b !== 0 ? a / b : "Error"), // Prevent division by zero
-    };
-    const tokens = expression.match(/(\d+\.?\d*|[+\-x/])/g);
-    if (!tokens) return "Error";
-    let stack = [];
-    let currentNumber = "";
-    for (let token of tokens) {
-        if (!isNaN(token)) {
-            stack.push(parseFloat(token));
-        } else if (token in operators) {
-            if (stack.length < 2) return "Error";
-            let b = stack.pop();
-            let a = stack.pop();
-            stack.push(operators[token](a, b));
-        } else {
-            return "Error";
-        }
+    try {
+        expression = expression.replace(/x/g, '*'); // Replace 'x' with '*' for multiplication
+        let result = new Function('return ' + expression)(); // Safe evaluation
+        return Number.isFinite(result) ? result : "Error"; // Handle division by zero
+    } catch {
+        return "Error"; // Catch any invalid expressions
     }
-    return stack.length === 1 ? stack[0] : "Error";
 }
+const cleared = document.querySelector(".clear");
+cleared.addEventListener("click", () => {
+    obj.data = "0"; 
+    obj.operator = false;
+    obj.operand = '';
+    screen.textContent = obj.data;//make sure you update the display
+});
+
+const delet = document.querySelector(".del");
+delet.addEventListener("click", () => {
+    obj.data = obj.data.slice(0, -1) || "0"; //Removes the last character, default to "0" if empty
+    screen.textContent = obj.data;
+});
