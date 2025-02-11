@@ -1,1 +1,1 @@
-odin-Calculator
+Building a calculator website to learn javascript.
